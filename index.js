@@ -266,23 +266,40 @@ const uColor = gl.getUniformLocation(program, 'uColor');
 //    ground plane (y = 0), centered on the origin.
 // ---------------------------------------------------------------------
 // const GRID_SIZE = 1000;   //bigger
-const GRID_SIZE = 10;    // 10 × 10 = 100 cubes
 const SPACING = 1.0;    // distance between cube ce// nters
+const cubes = [];       // the list of cubes to draw
 
+const image = new Image();
+image.src = './lilies (1).jpg';
+image.onload = () => {
+  // Create a canvas to draw the image onto
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0);
 
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
 
-const cubes = [];
-for (let row = 0; row < 500; row++) {
-  for (let col = 0; col < 481; col++) {
-    cubes.push({
-      x: (col - (GRID_SIZE - 1) / 2) * SPACING,
-      z: (row - (GRID_SIZE - 1) / 2) * SPACING,
-      height: 0.5 + Math.random() * 4,                        // 0.5 to 4.5
-      color: [Math.random(), Math.random(), Math.random()],   // random RGB
-    });
+  for (let row = 0; row < 500; row++) {
+    for (let col = 0; col < 481; col++) {
+      const pixelIndex = (row * canvas.width + col) * 4;
+      const r = data[pixelIndex] / 255;
+      const g = data[pixelIndex + 1] / 255;
+      const b = data[pixelIndex + 2] / 255;
+
+      cubes.push({
+        x: (col - (481 - 1) / 2) * SPACING,
+        z: (row - (500 - 1) / 2) * SPACING,
+        height: 0.5 + Math.random() * 4,                        // 0.5 to 4.5
+        color: [r, g, b],
+      });
+    }
   }
-}
 
+  draw();
+};
 
 // ---------------------------------------------------------------------
 // 4. MATRIX HELPERS
@@ -424,7 +441,7 @@ function draw() {
   // so cubes aren't squashed, and a visible range from 0.1 to 100 units
   // away from the camera. Anything outside that range is not drawn.
   const aspect = canvas.width / canvas.height;
-  gl.uniformMatrix4fv(uProjection, false, perspective(Math.PI / 4, aspect, 0.1, 100));
+  gl.uniformMatrix4fv(uProjection, false, perspective(Math.PI / 4, aspect, 0.1, 2000));
 
   // View: the camera sits at (14, 14, 18) - up and off to one side -
   // looks at the center of the grid (0, 0, 0), and +y is "up".
@@ -432,7 +449,12 @@ function draw() {
   //
   // (The `false` argument means "don't transpose the matrix".
   // WebGL requires it to be false.)
-  gl.uniformMatrix4fv(uView, false, lookAt([14, 14, 18], [0, 0, 0], [0, 1, 0]));
+
+  // See it top down view
+  //gl.uniformMatrix4fv(uView, false, lookAt([0, 750, 0], [0, 0, 0], [0, 0, -1]));
+  // See it from the side to view cube height
+  gl.uniformMatrix4fv(uView, false, lookAt([0, 500, 400], [0, 0, 0], [0, 1, 0]));
+
 
   // --- d. Draw every cube -------------------------------------------
   // Draw every cube: same triangles each time, different uniforms.
