@@ -268,39 +268,77 @@ const uColor = gl.getUniformLocation(program, 'uColor');
 // const GRID_SIZE = 1000;   //bigger
 const SPACING = 1.0;    // distance between cube ce// nters
 const cubes = [];       // the list of cubes to draw
-
-const image = new Image();
-image.src = './lilies (1).jpg';
-image.onload = () => {
-  // Create a canvas to draw the image onto
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(image, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-
-  for (let row = 0; row < 500; row++) {
-    for (let col = 0; col < 481; col++) {
-      const pixelIndex = (row * canvas.width + col) * 4;
-      const r = data[pixelIndex] / 255;
-      const g = data[pixelIndex + 1] / 255;
-      const b = data[pixelIndex + 2] / 255;
-
+const COLOR_IMAGE = './lilies (1).jpg';
+const GREY_IMAGE = './grayscale_output (1).jpg';
+const MIN_HEIGHT = 0.5;   // so black pixels still show up as a thin tile
+const MAX_HEIGHT = 50;    // height of a pure white (255) pixel
+ 
+// Turn a 0..255 grey value into a cube height.
+function greyToHeight(value) {
+  return MIN_HEIGHT + (value / 255) * (MAX_HEIGHT - MIN_HEIGHT);
+}
+ 
+// Load an image and wait for it to finish loading.
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Could not load ${src}`));
+    img.src = src;
+  });
+}
+ 
+// Draw an image onto a hidden canvas and return its pixel data:
+// a flat list of numbers, 4 per pixel (red, green, blue, alpha),
+// going left to right across each row, rows top to bottom.
+function getPixels(img) {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = img.width;
+  offscreen.height = img.height;
+  const ctx = offscreen.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  return ctx.getImageData(0, 0, img.width, img.height).data;
+}
+ 
+async function buildScene() {
+  // Load both images at the same time and wait until both are ready.
+  const [colorImage, greyImage] = await Promise.all([
+    loadImage(COLOR_IMAGE),
+    loadImage(GREY_IMAGE),
+  ]);
+ 
+  if (colorImage.width !== greyImage.width || colorImage.height !== greyImage.height) {
+    console.warn('Color and greyscale images are different sizes');
+  }
+ 
+  const colorData = getPixels(colorImage);
+  const greyData = getPixels(greyImage);
+ 
+  const cols = greyImage.width;    // 500 for lilies
+  const rows = greyImage.height;   // 481 for lilies
+ 
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const pixelIndex = (row * cols + col) * 4;
+ 
+      const r = colorData[pixelIndex] / 255;
+      const g = colorData[pixelIndex + 1] / 255;
+      const b = colorData[pixelIndex + 2] / 255;
+ 
+      const grey = greyData[pixelIndex];   // red channel = grey value
+ 
       cubes.push({
-        x: (col - (481 - 1) / 2) * SPACING,
-        z: (row - (500 - 1) / 2) * SPACING,
-        height: 0.5 + Math.random() * 4,                        // 0.5 to 4.5
+        x: (col - (cols - 1) / 2) * SPACING,
+        z: (row - (rows - 1) / 2) * SPACING,
+        height: greyToHeight(grey),
         color: [r, g, b],
       });
     }
   }
-
+ console.log("drawing");
   draw();
-};
-
+}
+buildScene().catch((err) => console.error(err));
 // ---------------------------------------------------------------------
 // 4. MATRIX HELPERS
 //    A 4×4 matrix can move, scale, or rotate points. WebGL stores
