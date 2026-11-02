@@ -402,6 +402,12 @@ function lookAt(eye, target, up) {
 //    are already sitting in the GPU buffer. Each cube costs us only a
 //    few uniforms plus one draw call.
 // ---------------------------------------------------------------------
+
+// Current camera state (starting top-down)
+let cameraEye = [0, 750, 0];
+let cameraUp = [0, 0, -1];
+const cameraTarget = [0, 0, 0];
+
 function draw() {
   // --- a. Size the drawing area -------------------------------------
   // A canvas has two sizes: how big it looks on the page (set by CSS),
@@ -450,10 +456,8 @@ function draw() {
   // (The `false` argument means "don't transpose the matrix".
   // WebGL requires it to be false.)
 
-  // See it top down view
-  //gl.uniformMatrix4fv(uView, false, lookAt([0, 750, 0], [0, 0, 0], [0, 0, -1]));
-  // See it from the side to view cube height
-  gl.uniformMatrix4fv(uView, false, lookAt([0, 500, 400], [0, 0, 0], [0, 1, 0]));
+  // View: Use the dynamic variables instead of hardcoded arrays
+  gl.uniformMatrix4fv(uView, false, lookAt(cameraEye, cameraTarget, cameraUp));
 
 
   // --- d. Draw every cube -------------------------------------------
@@ -485,7 +489,39 @@ function draw() {
     gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
   }
 }
+const startEye = [0, 750, 0];
+const startUp = [0, 0, -1];
 
+const endEye = [0, 200, 600]; 
+const endUp = [0, 1, 0];      
+
+// How many button clicks it takes to reach the end
+const TOTAL_STEPS = 10;
+let currentStep = 0;
+
+document.getElementById('moveCameraBtn').addEventListener('click', () => {
+  // Advance the step counter
+  if (currentStep < TOTAL_STEPS) {
+    currentStep++;
+  } else {
+    // Reset to the starting position after reaching the end
+    currentStep = 0;
+  }
+  const t = currentStep / TOTAL_STEPS;
+
+  cameraEye = [
+    startEye[0] * (1 - t) + endEye[0] * t,
+    startEye[1] * (1 - t) + endEye[1] * t,
+    startEye[2] * (1 - t) + endEye[2] * t,
+  ];
+  cameraUp = [
+    startUp[0] * (1 - t) + endUp[0] * t,
+    startUp[1] * (1 - t) + endUp[1] * t,
+    startUp[2] * (1 - t) + endUp[2] * t,
+  ];
+
+  draw();
+});
 // Draw the scene once when the page loads. Nothing moves, so we don't
 // need to redraw again unless something changes.
 draw();
