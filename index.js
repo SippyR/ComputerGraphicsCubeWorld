@@ -424,6 +424,64 @@ function lookAt(eye, target, up) {
   ];
 }
 
+// Bezier Curve Functions
+function bezierPoint(p0, p1, p2, p3, t) {
+  const mt = 1 - t;
+  return [
+    mt * mt * mt * p0[0] + 3 * mt * mt * t * p1[0] + 3 * mt * t * t * p2[0] + t * t * t * p3[0],
+    mt * mt * mt * p0[1] + 3 * mt * mt * t * p1[1] + 3 * mt * t * t * p2[1] + t * t * t * p3[1],
+    mt * mt * mt * p0[2] + 3 * mt * mt * t * p1[2] + 3 * mt * t * t * p2[2] + t * t * t * p3[2]
+  ];
+}
+
+// Control Points
+const p0 = [-200,  50,   0]; 
+const p1 = [-100, 200, 200]; 
+const p2 = [ 100, 200, 200];
+const p3 = [ 200,  50,   0]; 
+
+const skyBlock = {
+  position: [...p0],
+  scale: [20, 20, 20],
+  color: [0.5, 0.7, 1.0], // Light blue
+}
+
+// Bezier Curve Animation
+let isAnimating = false;
+let animationTime = 0;
+let startTime = 0;
+const animationDuration = 2000;
+
+document.getElementById('moveBlockBtn').addEventListener('click', () => {
+  if (isAnimating) return;
+  isAnimating = true;
+  startTime = performance.now();
+  requestAnimationFrame(updateSkyBlock);
+});
+
+function updateSkyBlock(currentTime) {
+  animationTime = currentTime - startTime;
+  let t = animationTime / animationDuration;
+  if (t > 1) {
+    t = 1;
+    isAnimating = false;
+  }
+
+  skyBlock.position = bezierPoint(p0, p1, p2, p3, t);
+
+  draw();
+
+  if (isAnimating) {
+    requestAnimationFrame(updateSkyBlock);
+  }
+  else {
+    setTimeout(() => {
+      skyBlock.position = [...p0];
+      draw();
+    }, 1000);
+  }
+}
+
 
 // ---------------------------------------------------------------------
 // 5. DRAW
@@ -526,6 +584,16 @@ function draw() {
     //   4. uses the depth test to keep only the closest pixels
     gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
   }
+
+  const skyModel = multiply(
+    translation(skyBlock.position[0], skyBlock.position[1], skyBlock.position[2]),
+    scaling(skyBlock.scale[0], skyBlock.scale[1], skyBlock.scale[2])
+  );
+
+  gl.uniformMatrix4fv(uModel, false, skyModel);
+  gl.uniform3fv(uColor, skyBlock.color);
+
+  gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
 }
 const startEye = [0, 750, 0];
 const startUp = [0, 0, -1];
