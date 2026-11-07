@@ -1,4 +1,4 @@
-### Computer Graphics Project 1 Documentation
+### Computer Graphics Project 2 Documentation
 # By Ryan Sippy & Jason Bellerjeau
 
 ## Project Overview
@@ -81,4 +81,4 @@ Textures: The sky block is wrapped in a repeating image. It generates "mipmaps" 
 We would first like to fix the texture mapping on the flying block, so that it is not a 2x2 of the image.  We would also like to add more flying blocks, and have them fly in different patterns around the painting.  Finally, we would also like to add more camera perspectives, and have the user be able to control the camera with the mouse.  
 
 ## Demo Video
-[Computer Graphics Project 1 Demo](https://youtu.be/m7P2xjEKYvQ)
+[Computer Graphics Project 2 Demo](https://youtu.be/m7P2xjEKYvQ)
